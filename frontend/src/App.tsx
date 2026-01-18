@@ -9,6 +9,7 @@ import { Alerts } from './pages/Alerts';
 import { AuditLog } from './pages/AuditLog';
 import { ToastProvider } from './components/ui/Toast';
 import { Login } from './pages/Login';
+import { Home } from './pages/Home';
 import { ThemeProvider } from './context/ThemeContext';
 
 // Placeholders for other pages
@@ -27,6 +28,9 @@ function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
+            {/* Landing Page */}
+            <Route path="/home" element={<Home />} />
+
             {/* Public Route */}
             <Route path="/login" element={<Login />} />
 
