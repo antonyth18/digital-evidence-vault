@@ -189,7 +189,7 @@ export function UploadEvidence() {
                             <div className="bg-white/60 dark:bg-slate-800/60 p-6 rounded-lg text-left text-xs font-mono space-y-3 border border-emerald-100 dark:border-emerald-800 max-w-lg mx-auto shadow-sm">
                                 <div className="flex justify-between border-b border-emerald-100 dark:border-emerald-800 pb-2">
                                     <span className="text-slate-500 dark:text-slate-400">Evidence ID:</span>
-                                    <span className="text-slate-900 dark:text-white font-bold">{uploadResult?.evidence.evidenceId}</span>
+                                    <span className="text-slate-900 dark:text-white font-bold">{uploadResult?.evidence.id}</span>
                                 </div>
                                 <div className="flex justify-between border-b border-emerald-100 dark:border-emerald-800 pb-2">
                                     <span className="text-slate-500 dark:text-slate-400">File Name:</span>
@@ -197,7 +197,7 @@ export function UploadEvidence() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-slate-500 dark:text-slate-400">Hash (SHA-256):</span>
-                                    <span className="text-slate-900 dark:text-white truncate ml-4">{uploadResult?.evidence.evidenceHash}</span>
+                                    <span className="text-slate-900 dark:text-white truncate ml-4">{uploadResult?.evidence.hash}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-slate-500 dark:text-slate-400">TxID:</span>
@@ -205,7 +205,7 @@ export function UploadEvidence() {
                                 </div>
                                 <div className="flex justify-between pt-2 border-t border-emerald-100 dark:border-emerald-800">
                                     <span className="text-slate-500 dark:text-slate-400">Timestamp:</span>
-                                    <span className="text-slate-900 dark:text-white">{new Date().toISOString()}</span>
+                                    <span className="text-slate-900 dark:text-white">{uploadResult?.evidence.timestamp}</span>
                                 </div>
                             </div>
                             <div className="pt-4">

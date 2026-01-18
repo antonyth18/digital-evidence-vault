@@ -31,13 +31,19 @@ export function Sidebar() {
     return (
         <div className="flex flex-col w-[280px] bg-slate-50/80 dark:bg-black/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-white/10 min-h-screen z-50">
             <div className="p-8 pb-4">
-                <h1 className="text-xl font-semibold tracking-tight flex items-center gap-3 text-slate-900 dark:text-white">
+                <div className="flex items-center gap-3">
                     <div className="p-2 bg-brand-blue rounded-xl shadow-lg shadow-brand-blue/20">
                          <ShieldCheck className="w-5 h-5 text-white" />
                     </div>
-                    <span>Sentinel</span>
-                </h1>
-                <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-2 ml-1 uppercase tracking-widest pl-12">Evidence Integrity</p>
+                    <div>
+                        <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white leading-none">
+                            Sentinel
+                        </h1>
+                        <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                            Evidence Integrity
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <nav className="flex-1 px-4 py-6 space-y-1">

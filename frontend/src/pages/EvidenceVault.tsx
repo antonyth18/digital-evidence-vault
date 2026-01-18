@@ -18,31 +18,60 @@ export function EvidenceVault() {
     const [loading, setLoading] = useState(true);
     const [tamperEvents, setTamperEvents] = useState<any[]>([]);
 
+    // Debounce search
     useEffect(() => {
-        const fetchEvidence = async () => {
-            try {
-                const res = await api.getEvidence();
-                // Map backend format to frontend Evidence type if necessary
-                const mapped = res.evidence.map((e: any) => ({
-                    id: e.evidenceId,
-                    type: e.evidenceType,
-                    source: e.source,
-                    collectedBy: e.collectedBy,
-                    date: new Date(e.timestamp).toLocaleDateString(),
-                    status: 'verified', // Backend only stores valid uploads for now
-                    hash: e.evidenceHash,
-                    size: (e.fileSize / 1024 / 1024).toFixed(2) + ' MB',
-                    txHash: e.txHash
-                }));
-                setEvidenceList(mapped);
-                setLoading(false);
-            } catch (error) {
-                console.error('Failed to fetch evidence:', error);
-                setLoading(false);
+        const timer = setTimeout(() => {
+            fetchEvidence();
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search, typeFilter, statusFilter]);
+
+    const fetchEvidence = async () => {
+        setLoading(true);
+        try {
+            const filters = {
+                search: search || undefined,
+                type: typeFilter !== 'All Types' ? typeFilter : undefined,
+                status: statusFilter !== 'All Statuses' ? statusFilter : undefined
+            };
+
+            const res = await api.getEvidence(filters);
+
+            const mapped = res.evidence.map((e: any) => ({
+                id: e.evidenceId,
+                type: e.evidenceType,
+                source: e.source,
+                collectedBy: e.collectedBy,
+                date: new Date(e.timestamp).toLocaleDateString(),
+                status: 'verified', // Backend validates blockchain status
+                hash: e.evidenceHash,
+                size: (e.fileSize / 1024 / 1024).toFixed(2) + ' MB',
+                txHash: e.txHash,
+                storagePath: e.storagePath
+            }));
+            setEvidenceList(mapped);
+        } catch (error) {
+            console.error('Failed to fetch evidence:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDownload = async (id: string, fileName: string) => {
+        try {
+            const res = await api.getDownloadUrl(id);
+            if (res.success && res.url) {
+                // Determine if we should open in new tab or download directly
+                // For signed URLs, opening in new tab is usually safest
+                window.open(res.url, '_blank');
+            } else {
+                alert('Download link not available');
             }
-        };
-        fetchEvidence();
-    }, []);
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Failed to get download link');
+        }
+    };
 
     const fetchTamperEvents = async (id: string) => {
         try {
@@ -118,13 +147,7 @@ export function EvidenceVault() {
                     <TableBody>
                         {loading ? (
                             <TableRow><TableCell colSpan={6} className="text-center py-8">Loading evidence records...</TableCell></TableRow>
-                        ) : evidenceList.filter(item => {
-                            const matchesSearch = item.id.toLowerCase().includes(search.toLowerCase()) ||
-                                item.collectedBy.toLowerCase().includes(search.toLowerCase());
-                            const matchesType = typeFilter ? item.type === typeFilter : true;
-                            const matchesStatus = statusFilter ? item.status === statusFilter : true;
-                            return matchesSearch && matchesType && matchesStatus;
-                        }).map((item) => (
+                        ) : evidenceList.map((item) => (
                             <TableRow
                                 key={item.id}
                                 className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:border-slate-800 transition-colors"
@@ -221,6 +244,9 @@ export function EvidenceVault() {
 
                         <div className="flex justify-end gap-2 pt-2">
                             <Button variant="outline" onClick={() => setSelectedEvidence(null)}>Close</Button>
+                            <Button variant="outline" onClick={() => handleDownload(selectedEvidence.id, `evidence-${selectedEvidence.id}`)}>
+                                <Download className="w-4 h-4 mr-2" /> Download File
+                            </Button>
                             <Button onClick={() => {
                                 const proof = {
                                     evidenceId: selectedEvidence.id,

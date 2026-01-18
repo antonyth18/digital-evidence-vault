@@ -20,11 +20,20 @@ app.use(express.json());
 // Configure multer for file uploads (memory storage for hashing)
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Initialize blockchain service and then start reporting
+// Initialize blockchain and Supabase services
+const supabaseService = require('./services/supabaseService');
+
 let blockchainReady = false;
-blockchainService.initialize().then(ready => {
-    blockchainReady = ready;
-    if (ready) {
+let supabaseReady = false;
+
+Promise.all([
+    blockchainService.initialize(),
+    Promise.resolve(supabaseService.initializeSupabase())
+]).then(([bcReady, sbReady]) => {
+    blockchainReady = bcReady;
+    supabaseReady = sbReady;
+
+    if (blockchainReady) {
         console.log('✅ Blockchain service ready');
     } else {
         console.log('⚠️  Running in MOCK mode - blockchain disabled');
@@ -40,8 +49,9 @@ function printServerStatus() {
     console.log('   Digital Evidence Vault - Backend Server Status');
     console.log('═══════════════════════════════════════════════════');
     console.log(`   Blockchain Integration: ${blockchainReady ? '✅ ENABLED' : '⚠️  DISABLED'}`);
-    console.log(`   Policy Engine: ${process.env.ENABLE_POLICY_ENGINE === 'true' ? '✅ ENABLED' : '⚠️  DISABLED'}`);
-    console.log(`   AI Risk Scoring: ${process.env.ENABLE_AI_SCORING === 'true' ? '✅ ENABLED' : '⚠️  DISABLED'}`);
+    console.log(`   Supabase Database:      ${supabaseReady ? '✅ ENABLED' : '⚠️  DISABLED'}`);
+    console.log(`   Policy Engine:          ${process.env.ENABLE_POLICY_ENGINE === 'true' ? '✅ ENABLED' : '⚠️  DISABLED'}`);
+    console.log(`   AI Risk Scoring:        ${process.env.ENABLE_AI_SCORING === 'true' ? '✅ ENABLED' : '⚠️  DISABLED'}`);
     console.log('═══════════════════════════════════════════════════');
     console.log('');
 }
@@ -71,35 +81,84 @@ app.post('/api/evidence/upload-blockchain', upload.single('file'), async (req, r
         console.log('📁 File uploaded:', req.file.originalname);
         console.log('🔐 SHA-256 Hash:', evidenceHash);
 
-        // 2. Register on blockchain
+        // 2. Upload to Supabase Storage
+        let storageData = { path: null, url: null };
+        if (supabaseReady) {
+            storageData = await supabaseService.uploadFile(
+                req.file.buffer,
+                req.file.originalname,
+                req.file.mimetype
+            );
+            if (storageData.error) {
+                console.error('⚠️ Storage upload failed:', storageData.error);
+                return res.status(500).json({
+                    error: 'Storage upload failed',
+                    details: 'Ensure the "evidence-files" bucket exists in Supabase and has public/authenticated write policies.',
+                    originalError: storageData.error
+                });
+            }
+        }
+
+        // 3. Register on blockchain
         if (blockchainReady) {
             const result = await blockchainService.registerEvidence(evidenceHash, caseId);
 
-            // 3. Store metadata in database (mock for now)
+            // 4. Store metadata in Supabase Database
             const evidenceMetadata = {
-                evidenceId: result.evidenceId,
-                fileName: req.file.originalname,
-                fileSize: req.file.size,
-                evidenceType: evidenceType || 'Unknown',
+                evidence_id: result.evidenceId,
+                case_id: caseId,
+                file_name: req.file.originalname,
+                file_size: req.file.size,
+                mime_type: req.file.mimetype,
+                evidence_type: evidenceType || 'Unknown',
                 source: source || 'Direct Upload',
-                collectedBy: collectedBy || 'System',
-                caseId,
-                evidenceHash,
-                txHash: result.txHash,
-                blockNumber: result.blockNumber,
-                timestamp: new Date().toISOString()
+                collected_by: collectedBy || 'System',
+                sha256_hash: evidenceHash,
+                storage_path: storageData.path,
+                storage_url: storageData.url,
+                tx_hash: result.txHash,
+                block_number: result.blockNumber,
+                gas_used: result.gasUsed ? result.gasUsed.toString() : '0'
             };
 
-            console.log('✅ Evidence registered:', evidenceMetadata.evidenceId);
+            console.log('✅ Evidence registered:', evidenceMetadata.evidence_id);
 
-            // Persist evidence
-            evidenceStorage.saveEvidence(evidenceMetadata);
+            // Persist evidence to DB
+            if (supabaseReady) {
+                await supabaseService.saveEvidenceMetadata(evidenceMetadata);
+            } else {
+                // Fallback to local memory storage for demo if DB not ready
+                evidenceStorage.saveEvidence({
+                    evidenceId: result.evidenceId,
+                    fileName: req.file.originalname,
+                    fileSize: req.file.size,
+                    evidenceType: evidenceType,
+                    source,
+                    collectedBy,
+                    caseId,
+                    evidenceHash,
+                    txHash: result.txHash,
+                    blockNumber: result.blockNumber,
+                    timestamp: new Date().toISOString()
+                });
+            }
 
-            // 4. Return blockchain proof to frontend
+            // 5. Return blockchain proof to frontend (mapping fields to frontend expectations)
             return res.json({
                 success: true,
                 message: 'Evidence registered on blockchain',
-                evidence: evidenceMetadata,
+                evidence: {
+                    id: result.evidenceId,
+                    type: evidenceType,
+                    source: source,
+                    collectedBy: collectedBy,
+                    timestamp: new Date().toISOString(),
+                    status: 'verified',
+                    hash: evidenceHash,
+                    size: req.file.size,
+                    txHash: result.txHash,
+                    storagePath: storageData.path
+                },
                 blockchain: {
                     evidenceId: result.evidenceId,
                     txHash: result.txHash,
@@ -421,12 +480,64 @@ app.post('/api/ai/risk-score', upload.single('file'), async (req, res) => {
  * Get all registered evidence
  * GET /api/evidence
  */
-app.get('/api/evidence', (req, res) => {
+app.get('/api/evidence', async (req, res) => {
     try {
-        const evidence = evidenceStorage.getAllEvidence();
-        res.json({ success: true, evidence });
+        if (supabaseReady) {
+            // Extract query parameters for filtering
+            const filters = {
+                search: req.query.search,
+                type: req.query.type,
+                status: req.query.status
+            };
+
+            const evidence = await supabaseService.getEvidence(filters);
+
+            // Map DB format to frontend format
+            const mappedEvidence = evidence.map(e => ({
+                evidenceId: e.evidence_id,
+                evidenceType: e.evidence_type,
+                source: e.source,
+                collectedBy: e.collected_by || e.collectedBy, // fallback
+                timestamp: e.created_at,
+                evidenceHash: e.sha256_hash,
+                fileSize: e.file_size,
+                txHash: e.tx_hash,
+                storagePath: e.storage_path
+            }));
+
+            res.json({ success: true, evidence: mappedEvidence });
+        } else {
+            // Fallback to memory storage
+            const evidence = evidenceStorage.getAllEvidence();
+            console.warn('⚠️ Supabase not ready, returning in-memory evidence');
+            res.json({ success: true, evidence });
+        }
     } catch (error) {
+        console.error('Get Evidence Failed:', error);
         res.status(500).json({ error: 'Failed to retrieve evidence' });
+    }
+});
+
+/**
+ * Get download URL for evidence
+ * GET /api/evidence/:id/download
+ */
+app.get('/api/evidence/:id/download', async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (supabaseReady) {
+            const evidence = await supabaseService.getEvidenceById(id);
+            if (!evidence || !evidence.storage_path) {
+                return res.status(404).json({ error: 'File not found' });
+            }
+
+            const url = await supabaseService.getFileUrl(evidence.storage_path);
+            res.json({ success: true, url });
+        } else {
+            res.status(503).json({ error: 'Storage service unavailable' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate download URL' });
     }
 });
 

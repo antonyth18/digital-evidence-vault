@@ -4,9 +4,26 @@ export const api = {
     /**
      * Get all evidence from the backend
      */
-    async getEvidence() {
-        const response = await fetch(`${API_BASE_URL}/evidence`);
+    /**
+     * Get all evidence from the backend with optional filters
+     */
+    async getEvidence(filters?: { search?: string, type?: string, status?: string }) {
+        const params = new URLSearchParams();
+        if (filters?.search) params.append('search', filters.search);
+        if (filters?.type) params.append('type', filters.type);
+        if (filters?.status) params.append('status', filters.status);
+
+        const response = await fetch(`${API_BASE_URL}/evidence?${params.toString()}`);
         if (!response.ok) throw new Error('Failed to fetch evidence');
+        return response.json();
+    },
+
+    /**
+     * Get download URL for evidence file
+     */
+    async getDownloadUrl(evidenceId: string) {
+        const response = await fetch(`${API_BASE_URL}/evidence/${evidenceId}/download`);
+        if (!response.ok) throw new Error('Failed to get download URL');
         return response.json();
     },
 
@@ -20,7 +37,7 @@ export const api = {
         });
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Upload failed');
+            throw new Error(error.details || error.error || error.message || 'Upload failed');
         }
         return response.json();
     },
