@@ -131,55 +131,49 @@ export function Dashboard() {
             </Card>
 
             {/* Recent Activity & System Status */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4 p-6 dark:bg-slate-900 dark:border-slate-800">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                <Card className="p-6 dark:bg-slate-900 dark:border-slate-800">
                     <CardHeader className="p-0 pb-4">
                         <CardTitle className="dark:text-white">Recent Activity</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="space-y-8">
+                        <div className="space-y-4">
                             {stats?.recentActivity?.length > 0 ? (
                                 stats.recentActivity.map((activity: any, i: number) => (
-                                    <div key={i} className="flex items-center">
-                                        <div className="ml-4 space-y-1">
-                                            <p className="text-sm font-medium leading-none dark:text-white">Evidence #{activity.id} {activity.action}</p>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400">{activity.actor}</p>
+                                    <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-medium dark:text-white">Evidence #{activity.id}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{activity.actor}</p>
                                         </div>
-                                        <div className="ml-auto font-medium text-sm text-slate-500 dark:text-slate-400">
+                                        <span className="text-xs text-slate-400">
                                             {new Date(activity.timestamp).toLocaleTimeString()}
-                                        </div>
+                                        </span>
                                     </div>
                                 ))
                             ) : (
-                                [1, 2, 3, 4, 5].map((i) => (
-                                    <div key={i} className="flex items-center opacity-50">
-                                        <div className="ml-4 space-y-1">
-                                            <p className="text-sm font-medium leading-none dark:text-white">Mock Evidence #EF-{200 + i} Uploaded</p>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400">Officer John Doe • Station 4</p>
-                                        </div>
-                                        <div className="ml-auto font-medium text-sm text-slate-500 dark:text-slate-400">Sample Data</div>
-                                    </div>
-                                ))
+                                <p className="text-sm text-slate-400 dark:text-slate-500 py-4 text-center">
+                                    No recent activity
+                                </p>
                             )}
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="col-span-3 p-6 dark:bg-slate-900 dark:border-slate-800">
+                <Card className="p-6 dark:bg-slate-900 dark:border-slate-800">
                     <CardHeader className="p-0 pb-4">
                         <CardTitle className="dark:text-white">System Status</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 p-0">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium dark:text-slate-200">Blockchain Node</span>
+                            <span className="text-sm font-medium dark:text-slate-200">Blockchain</span>
+                            <Badge variant="success">Connected</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium dark:text-slate-200">Supabase</span>
                             <Badge variant="success">Active</Badge>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium dark:text-slate-200">IPFS Gateway</span>
-                            <Badge variant="success">Active</Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium dark:text-slate-200">AI Analysis Engine</span>
-                            <Badge variant="warning">High Load</Badge>
+                            <span className="text-sm font-medium dark:text-slate-200">AI Engine</span>
+                            <Badge variant="success">Ready</Badge>
                         </div>
                     </CardContent>
                 </Card>

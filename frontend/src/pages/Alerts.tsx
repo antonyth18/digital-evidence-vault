@@ -54,23 +54,26 @@ export function Alerts() {
                 {alerts.length > 0 ? (
                     alerts.map((alert) => (
                         <Card key={alert.id} className="border-l-4 border-l-transparent data-[severity=high]:border-l-red-500 data-[severity=medium]:border-l-amber-500 data-[severity=low]:border-l-blue-500 dark:bg-slate-900 dark:border-slate-800" data-severity={alert.severity}>
-                            <CardContent className="p-6 flex items-start gap-4">
-                                <div className="mt-1">
-                                    {alert.severity === 'high' && <AlertOctagon className="text-red-600 dark:text-red-400 w-6 h-6" />}
-                                    {alert.severity === 'medium' && <AlertTriangle className="text-amber-600 dark:text-amber-400 w-6 h-6" />}
-                                    {alert.severity === 'low' && <Info className="text-blue-600 dark:text-blue-400 w-6 h-6" />}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between">
-                                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{alert.title}</h3>
-                                        <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">{alert.time}</span>
+                            <CardContent className="p-4 sm:p-6">
+                                <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                                    <div className="flex items-center gap-3 sm:block">
+                                        {alert.severity === 'high' && <AlertOctagon className="text-red-600 dark:text-red-400 w-5 h-5 sm:w-6 sm:h-6" />}
+                                        {alert.severity === 'medium' && <AlertTriangle className="text-amber-600 dark:text-amber-400 w-5 h-5 sm:w-6 sm:h-6" />}
+                                        {alert.severity === 'low' && <Info className="text-blue-600 dark:text-blue-400 w-5 h-5 sm:w-6 sm:h-6" />}
+                                        <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white sm:hidden">{alert.title}</h3>
                                     </div>
-                                    <p className="text-slate-600 dark:text-slate-400 mt-1">{alert.desc}</p>
-                                    <div className="mt-4 flex gap-2">
-                                        <Badge variant="outline" className="font-mono dark:border-slate-700 dark:text-slate-300">{alert.evidenceId}</Badge>
-                                        <Badge variant={alert.severity === 'high' ? 'danger' : alert.severity === 'medium' ? 'warning' : 'secondary'}>
-                                            {alert.severity.toUpperCase()}
-                                        </Badge>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                                            <h3 className="hidden sm:block text-lg font-semibold text-slate-900 dark:text-white">{alert.title}</h3>
+                                            <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">{alert.time}</span>
+                                        </div>
+                                        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 break-words">{alert.desc}</p>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <Badge variant="outline" className="font-mono text-xs dark:border-slate-700 dark:text-slate-300 truncate max-w-[150px] sm:max-w-none">{alert.evidenceId}</Badge>
+                                            <Badge variant={alert.severity === 'high' ? 'danger' : alert.severity === 'medium' ? 'warning' : 'secondary'}>
+                                                {alert.severity.toUpperCase()}
+                                            </Badge>
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
