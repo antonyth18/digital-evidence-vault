@@ -7,7 +7,6 @@ import {
     ShieldCheck,
     AlertTriangle,
     History,
-    Settings,
     Moon,
     Sun
 } from 'lucide-react';
@@ -22,7 +21,6 @@ const navigation = [
     { name: 'Verification', href: '/verification', icon: ShieldCheck },
     { name: 'Alerts & Flags', href: '/alerts', icon: AlertTriangle },
     { name: 'Audit Log', href: '/audit', icon: History },
-    { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 interface SidebarProps {
